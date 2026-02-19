@@ -1,0 +1,17 @@
+services:
+  ddns:
+    build: .
+    container_name: ddns
+    env_file:
+      - .env
+    environment:
+      CF_RECORD_NAME: ${CF_RECORD_NAME:-sfc.taylor.md}
+      CF_RECORD_TYPE: ${CF_RECORD_TYPE:-A}
+      # Or use CF_RECORD_TYPES for multiple, e.g. A,AAAA
+      CF_RECORD_TYPES: ${CF_RECORD_TYPES:-}
+      CF_ZONE_NAME: ${CF_ZONE_NAME:-taylor.md}
+      INTERVAL_SECONDS: ${INTERVAL_SECONDS:-3600}
+      LOG_FILE: /logs/ddns.log
+    volumes:
+      - ./logs:/logs
+    restart: unless-stopped
