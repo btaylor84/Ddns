@@ -12,6 +12,8 @@ services:
       CF_ZONE_NAME: ${CF_ZONE_NAME:-taylor.md}
       INTERVAL_SECONDS: ${INTERVAL_SECONDS:-3600}
       LOG_FILE: /logs/ddns.log
+      NTFY_URL: ${NTFY_URL:-https://ntfy.taylor.md}
+      NTFY_TOPIC: ${NTFY_TOPIC:-ddns}
     volumes:
       - ./logs:/logs
     restart: unless-stopped

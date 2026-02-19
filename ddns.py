@@ -147,6 +147,24 @@ def cf_create_record(
     return data["result"]
 
 
+def ntfy_publish(
+    base_url: str,
+    topic: str,
+    message: str,
+    timeout: int,
+    logger: logging.Logger,
+) -> None:
+    try:
+        resp = requests.post(
+            f"{base_url.rstrip('/')}/{topic}",
+            data=message.encode("utf-8"),
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+    except Exception as exc:
+        logger.warning("ntfy publish failed: %s", exc)
+
+
 def infer_zone_from_record(record_name: str) -> str:
     parts = record_name.split(".")
     if len(parts) < 2:
@@ -173,6 +191,8 @@ def main() -> int:
     public_ip_url_2 = env("PUBLIC_IP_URL_2", "https://ifconfig.me/ip")
     timeout_seconds = int(env("HTTP_TIMEOUT_SECONDS", "10"))
     run_once = parse_bool(env("RUN_ONCE"), False)
+    ntfy_url = env("NTFY_URL", "https://ntfy.taylor.md")
+    ntfy_topic = env("NTFY_TOPIC", "ddns")
 
     log_file = env("LOG_FILE", "/logs/ddns.log")
     log_level = env("LOG_LEVEL", "INFO").upper()
@@ -257,9 +277,23 @@ def main() -> int:
                 if record:
                     cf_update_record(base_url, token, zid, record["id"], payload, timeout_seconds)
                     logger.info("Updated DNS %s (%s) -> %s", record_name, record_type, ip_to_use)
+                    ntfy_publish(
+                        ntfy_url,
+                        ntfy_topic,
+                        f"DDNS updated {record_name} ({record_type}) -> {ip_to_use}",
+                        timeout_seconds,
+                        logger,
+                    )
                 else:
                     cf_create_record(base_url, token, zid, payload, timeout_seconds)
                     logger.info("Created DNS %s (%s) -> %s", record_name, record_type, ip_to_use)
+                    ntfy_publish(
+                        ntfy_url,
+                        ntfy_topic,
+                        f"DDNS created {record_name} ({record_type}) -> {ip_to_use}",
+                        timeout_seconds,
+                        logger,
+                    )
         except Exception as exc:
             logger.error("Update failed: %s", exc)
 
